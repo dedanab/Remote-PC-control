@@ -34,7 +34,7 @@ if not os.path.isfile(os.path.join(startup_directory, script_name)):
     print(f"Скрипт {script_name} добавлен в автозагрузку.")
 
 # Замените 'YOUR_BOT_TOKEN' на токен вашего Telegram бота
-bot = telebot.TeleBot('6689721467:AAEgi-BpiwmEfa_0wYTNl1I_88skp2ZFhsQ')
+bot = telebot.TeleBot('YOUR_BOT_TOKEN')
 
 # Переменная для отслеживания ожидания фото/видео
 waiting_for_media = False
