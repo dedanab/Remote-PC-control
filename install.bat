@@ -9,6 +9,7 @@ python -m pip install Pillow
 python -m pip install config
 python -m pip install telegram-bot
 pip install --upgrade python-telegram-bot
-
+pip install wavio
+pip install subprocess
 
 
