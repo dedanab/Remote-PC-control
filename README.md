@@ -16,6 +16,7 @@ RUS
 6. Загрузить и открть фото/видео
 7. Добавление автоматически в автозагрузку
 8. Запись аудио 10 секунд
+9. Запуск программы по пути
 
 
 
@@ -39,3 +40,4 @@ Functional:
 6. Upload and open photo/video
 7. Add automatically to startup
 8. Record audio 10 seconds
+9. Running a program along the path
