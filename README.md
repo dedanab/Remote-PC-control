@@ -17,7 +17,8 @@ RUS
 7. Добавление автоматически в автозагрузку
 8. Запись аудио 10 секунд
 9. Запуск программы по пути
-
+10. Открытие ссылок в браузере
+11. Сохранение файлов по пути(БЕТА)
 
 
 
@@ -41,3 +42,5 @@ Functional:
 7. Add automatically to startup
 8. Record audio 10 seconds
 9. Running a program along the path
+10. Opening links in the browser
+11. Saving files along the path (BETA)
