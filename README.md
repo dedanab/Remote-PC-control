@@ -14,11 +14,10 @@ RUS
 4. Перезагрузка ПК
 5. Фото с вебкамеры
 6. Загрузить и открть фото/видео
-7. Добавление автоматически в автозагрузку
-8. Запись аудио 10 секунд
-9. Запуск программы по пути
-10. Открытие ссылок в браузере
-11. Сохранение файлов по пути(БЕТА)
+7. Запись аудио 10 секунд
+8. Запуск программы по пути
+9. Открытие ссылок в браузере
+10. Сохранение файлов по пути(БЕТА)
 
 
 
@@ -39,8 +38,7 @@ Functional:
 4. Reboot PC
 5. Photo from webcam
 6. Upload and open photo/video
-7. Add automatically to startup
-8. Record audio 10 seconds
-9. Running a program along the path
-10. Opening links in the browser
-11. Saving files along the path (BETA)
+7. Audio recording 10 seconds
+8. Run the program along the path
+9. Opening links in the browser
+10. Saving files along the path (BETA)
