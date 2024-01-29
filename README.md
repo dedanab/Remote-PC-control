@@ -18,6 +18,7 @@ RUS
 8. Запуск программы по пути
 9. Открытие ссылок в браузере
 10. Сохранение файлов по пути(БЕТА)
+11. Отправка сообщений на ПК
 
 
 
@@ -42,3 +43,4 @@ Functional:
 8. Run the program along the path
 9. Opening links in the browser
 10. Saving files along the path (BETA)
+11. Sending messages to PC
